@@ -19,16 +19,23 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run(){
   try{
     const usersCollection = client.db('rebooksDb').collection('users');
+    const categoriesCollection = client.db('rebooksDb').collection('categories');
+    const productsCollection = client.db('rebooksDb').collection('products');
 
     app.post('/users', async(req, res) =>{
       const user = req.body;
-      console.log(user);
       const query = {email: user.email};
       const alreadyExist = await usersCollection.find(query).toArray();
       if(alreadyExist.length){
         return res.send({acknowledged: false});
       }
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    })
+
+    app.get('/category', async(req, res) =>{
+      const query = {};
+      const result = await categoriesCollection.find(query).toArray();
       res.send(result);
     })
   }
