@@ -23,6 +23,11 @@ async function run(){
     app.post('/users', async(req, res) =>{
       const user = req.body;
       console.log(user);
+      const query = {email: user.email};
+      const alreadyExist = await usersCollection.find(query).toArray();
+      if(alreadyExist.length){
+        return res.send({acknowledged: false});
+      }
       const result = await usersCollection.insertOne(user);
       res.send(result);
     })
