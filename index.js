@@ -1,6 +1,7 @@
 const { MongoClient, ServerApiVersion } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const app = express();
@@ -22,6 +23,19 @@ async function run(){
     const categoriesCollection = client.db('rebooksDb').collection('categories');
     const productsCollection = client.db('rebooksDb').collection('products');
 
+
+    // step 1
+    app.get('/jwt', async(req, res) =>{
+      const email = req.query.email;
+      const query = {email: email};
+      const user = await usersCollection.findOne(query);
+      if(user){
+        const token = jwt.sign({email}, process.env.ACCESS_TOKEN, {expiresIn: '1h'});
+        return res.send({accessToken: token});
+      }
+      res.status(403).send({accessToken: ''});
+    })
+
     app.post('/users', async(req, res) =>{
       const user = req.body;
       const query = {email: user.email};
@@ -36,6 +50,12 @@ async function run(){
     app.get('/category', async(req, res) =>{
       const query = {};
       const result = await categoriesCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.get('/products', async(req, res) =>{
+      const query = {};
+      const result = await productsCollection.find(query).toArray();
       res.send(result);
     })
   }
