@@ -89,7 +89,6 @@ async function run(){
 
     app.get('/my-products', verifyJWT, async(req, res) =>{
       const email = req.query.email;
-
       const decodedEmail = req.decoded.email;
 
       if(email !== decodedEmail){
@@ -107,6 +106,22 @@ async function run(){
       const query = {email: email};
       const user = await usersCollection.findOne(query);
       res.send({isAdmin: user.role === 'Admin'})
+    })
+
+    // check user seller
+    app.get('/users/seller/:email', async(req, res) =>{
+      const email = req.params.email;
+      const query = {email: email};
+      const user = await usersCollection.findOne(query);
+      res.send({isSeller: user?.role === 'Seller'})
+    })
+
+    // check user buyer
+    app.get('/users/buyer/:email', async(req, res) =>{
+      const email = req.params.email;
+      const query = {email: email};
+      const user = await usersCollection.findOne(query);
+      res.send({isBuyer: user?.role === 'Buyer'})
     })
   }
   finally{
