@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
@@ -73,6 +73,14 @@ async function run(){
       res.send(result);
     })
 
+    // get products by category id
+    app.get('/category/:id', async(req, res) =>{
+      const id = req.params.id;
+      const query = {categoryId: id};
+      const result = await productsCollection.find(query).toArray();
+      res.send(result);
+    })
+
     app.get('/products', async(req, res) =>{
       const query = {};
       const result = await productsCollection.find(query).toArray();
@@ -91,6 +99,14 @@ async function run(){
       const query = {seller_email: email};
       const result = await productsCollection.find(query).toArray();
       res.send(result);
+    })
+
+    // check user admin
+    app.get('/users/admin/:email', async(req, res) =>{
+      const email = req.params.email;
+      const query = {email: email};
+      const user = await usersCollection.findOne(query);
+      res.send({isAdmin: user.role === 'Admin'})
     })
   }
   finally{
