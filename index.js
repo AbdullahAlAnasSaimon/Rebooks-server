@@ -56,6 +56,20 @@ async function run(){
       res.status(403).send({accessToken: ''});
     })
 
+    // get all sellers
+    app.get('/users/all-seller', async(req, res) =>{
+      const query = {role: 'Seller'};
+      const result = await usersCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    // get all buyers
+    app.get('/users/all-buyer', async(req, res) =>{
+      const query = {role: 'Buyer'};
+      const result = await usersCollection.find(query).toArray();
+      res.send(result);
+    })
+
     app.post('/users', async(req, res) =>{
       const user = req.body;
       const query = {email: user.email};
@@ -81,9 +95,25 @@ async function run(){
       res.send(result);
     })
 
+    // get all products
     app.get('/products', async(req, res) =>{
       const query = {};
       const result = await productsCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    // post products
+    app.post('/products', async(req, res) =>{
+      const book = req.body;
+      const result = await productsCollection.insertOne(book);
+      res.send(result);
+    })
+
+    // delete product
+    app.delete('/products/:id', async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const result = await productsCollection.deleteOne(query);
       res.send(result);
     })
 
@@ -123,6 +153,9 @@ async function run(){
       const user = await usersCollection.findOne(query);
       res.send({isBuyer: user?.role === 'Buyer'})
     })
+
+    
+    
   }
   finally{
 
