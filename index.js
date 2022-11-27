@@ -42,6 +42,7 @@ async function run() {
     const usersCollection = client.db('rebooksDb').collection('users');
     const categoriesCollection = client.db('rebooksDb').collection('categories');
     const productsCollection = client.db('rebooksDb').collection('products');
+    const bookedProductsCollection = client.db('rebooksDb').collection('bookedProduct');
 
 
     const verifyAdmin = async (req, res, next) => {
@@ -128,6 +129,12 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/advertise', async(req, res) =>{
+      const query = {advertisement: true};
+      const result = await productsCollection.find(query).toArray();
+      res.send(result);
+    })
+
     // post products
     app.post('/products', verifyJWT, verifySeller, async (req, res) => {
       const book = req.body;
@@ -167,6 +174,19 @@ async function run() {
 
       const query = { seller_email: email };
       const result = await productsCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    // my orders product
+    app.post('/my-orders', async(req, res) => {
+      const product = req.body;
+      const result = await bookedProductsCollection.insertOne(product);
+      res.send(result);
+    })
+
+    app.get('/my-orders', async(req, res) =>{
+      const query = {};
+      const result = await bookedProductsCollection.find(query).toArray();
       res.send(result);
     })
 
