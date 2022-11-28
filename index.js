@@ -243,6 +243,25 @@ async function run() {
       res.send(result);
     })
 
+    app.put('/reported-product/:id', async(req, res) =>{
+      const id = req.params.id;
+      const filter = {_id: ObjectId(id)};
+      const option = {upsert: true};
+      const updatedDoc = {
+        $set: {
+          report: true
+        }
+      }
+      const result = await productsCollection.updateOne(filter, updatedDoc, option);
+      res.send(result);
+    })
+
+    app.get('/reported-product', verifyJWT, async(req, res) =>{
+      const query = {report: true};
+      const result = await productsCollection.find(query).toArray();
+      res.send(result);
+    })
+
     // delete product
     app.delete('/products/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
