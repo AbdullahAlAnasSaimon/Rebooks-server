@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -43,6 +44,7 @@ async function run() {
     const categoriesCollection = client.db('rebooksDb').collection('categories');
     const productsCollection = client.db('rebooksDb').collection('products');
     const bookedProductsCollection = client.db('rebooksDb').collection('bookedProduct');
+    const paymentCollection = client.db('rebooksDb').collection('payment');
 
 
     const verifyAdmin = async (req, res, next) => {
@@ -68,6 +70,53 @@ async function run() {
 
       next();
     }
+
+    app.post('/create-payment-intent', verifyJWT, async(req, res) =>{
+      const product = req.body;
+      const price = product.product_price;
+      const amount = price * 100;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: "usd",
+        amount: amount,
+        "payment_method_types": [
+          "card"
+        ],
+
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    })
+
+    app.post('/payment', verifyJWT, async(req, res) =>{
+      const payment = req.body;
+      const result = await paymentCollection.insertOne(payment);
+
+      // update info to booked product collection
+      const bookedProductId = payment.bookedId;
+      const bookedFilter = {_id: ObjectId(bookedProductId)};
+      const bookedUpdatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId
+        }
+      }
+      const updateBooked = await bookedProductsCollection.updateOne(bookedFilter, bookedUpdatedDoc);
+
+      // update info to product collection
+      const id = payment.productID;
+      const productFilter = {_id: ObjectId(id)};
+      const UpdatedDoc = {
+        $set: {
+          paid: true,
+          advertisement: false
+        }
+      }
+      const updateProduct = await productsCollection.updateOne(productFilter, UpdatedDoc);
+      res.send(result);
+    })
 
     // api for jwt
     app.get('/jwt', async (req, res) => {
@@ -107,6 +156,44 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/users/only-sellers', async(req, res) =>{
+      const query = {role: 'Seller'};
+      const result = await usersCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.put('/users/:email', async(req, res) =>{
+      const email = req.params.email;
+      const filter = {email: email};
+      const sellerFilter = {seller_email: email}
+      const option = {upsert: true};
+      const updatedDoc = {
+        $set: {
+          verified: true
+        }
+      }
+
+      const result = await usersCollection.updateOne(filter, updatedDoc, option);
+      const updatedResult = await productsCollection.updateMany(sellerFilter, updatedDoc, option);
+      res.send(result);
+    })
+
+    // find user by email query
+    app.get('/users', async(req, res) =>{
+      const email = req.query.email;
+      const filter = {email: email}
+      const result = await usersCollection.findOne(filter);
+      res.send(result);
+    })
+
+    // delete seller by admin
+    app.delete('/users/:id', async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const result = await usersCollection.deleteOne(query);
+      res.send(result);
+    })
+
     // 
     app.get('/category', verifyJWT, async (req, res) => {
       const query = {};
@@ -143,7 +230,7 @@ async function run() {
     })
 
     // modifiyng products
-    app.put('/products/:id', async (req, res) => {
+    app.put('/products/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: ObjectId(id) };
       const option = { upsert: true }
@@ -181,12 +268,35 @@ async function run() {
     app.post('/my-orders', async(req, res) => {
       const product = req.body;
       const result = await bookedProductsCollection.insertOne(product);
+      const id = req.body.productID;
+      const filter = {_id: ObjectId(id)};
+      const updatedDoc = {
+        $set: {
+          availablity: false,
+        }
+      };
+      const updateResult = await productsCollection.updateOne(filter, updatedDoc)
       res.send(result);
     })
 
     app.get('/my-orders', async(req, res) =>{
-      const query = {};
+      const email = req.query.email;
+      const query = {user_email: email};
       const result = await bookedProductsCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.get('/my-orders/:id', async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const result = await bookedProductsCollection.findOne(query);
+      res.send(result);
+    })
+
+    app.delete('/my-orders/:id', async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const result = await bookedProductsCollection.deleteOne(query);
       res.send(result);
     })
 
