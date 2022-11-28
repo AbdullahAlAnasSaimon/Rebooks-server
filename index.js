@@ -145,7 +145,7 @@ async function run() {
     })
 
     // 
-    app.post('/users', verifyJWT, async (req, res) => {
+    app.post('/users', async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
       const alreadyExist = await usersCollection.find(query).toArray();
@@ -195,7 +195,7 @@ async function run() {
     })
 
     // 
-    app.get('/category', verifyJWT, async (req, res) => {
+    app.get('/category', async (req, res) => {
       const query = {};
       const result = await categoriesCollection.find(query).toArray();
       res.send(result);
