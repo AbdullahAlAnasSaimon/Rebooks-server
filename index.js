@@ -71,7 +71,7 @@ async function run() {
       next();
     }
 
-    app.post('/create-payment-intent', verifyJWT, async(req, res) =>{
+    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
       const product = req.body;
       const price = product.product_price;
       const amount = price * 100;
@@ -90,13 +90,13 @@ async function run() {
       });
     })
 
-    app.post('/payment', verifyJWT, async(req, res) =>{
+    app.post('/payment', verifyJWT, async (req, res) => {
       const payment = req.body;
       const result = await paymentCollection.insertOne(payment);
 
       // update info to booked product collection
       const bookedProductId = payment.bookedId;
-      const bookedFilter = {_id: ObjectId(bookedProductId)};
+      const bookedFilter = { _id: ObjectId(bookedProductId) };
       const bookedUpdatedDoc = {
         $set: {
           paid: true,
@@ -107,7 +107,7 @@ async function run() {
 
       // update info to product collection
       const id = payment.productID;
-      const productFilter = {_id: ObjectId(id)};
+      const productFilter = { _id: ObjectId(id) };
       const UpdatedDoc = {
         $set: {
           paid: true,
@@ -124,7 +124,7 @@ async function run() {
       const query = { email: email };
       const user = await usersCollection.findOne(query);
       if (user) {
-        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '1h' });
+        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, { expiresIn: '20d' });
         return res.send({ accessToken: token });
       }
       res.status(403).send({ accessToken: '' });
@@ -156,17 +156,17 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/users/only-sellers', async(req, res) =>{
-      const query = {role: 'Seller'};
+    app.get('/users/only-sellers', async (req, res) => {
+      const query = { role: 'Seller' };
       const result = await usersCollection.find(query).toArray();
       res.send(result);
     })
 
-    app.put('/users/:email', async(req, res) =>{
+    app.put('/users/:email', async (req, res) => {
       const email = req.params.email;
-      const filter = {email: email};
-      const sellerFilter = {seller_email: email}
-      const option = {upsert: true};
+      const filter = { email: email };
+      const sellerFilter = { seller_email: email }
+      const option = { upsert: true };
       const updatedDoc = {
         $set: {
           verified: true
@@ -179,17 +179,17 @@ async function run() {
     })
 
     // find user by email query
-    app.get('/users', async(req, res) =>{
+    app.get('/users', async (req, res) => {
       const email = req.query.email;
-      const filter = {email: email}
+      const filter = { email: email }
       const result = await usersCollection.findOne(filter);
       res.send(result);
     })
 
     // delete seller by admin
-    app.delete('/users/:id', async(req, res) =>{
+    app.delete('/users/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: ObjectId(id)};
+      const query = { _id: ObjectId(id) };
       const result = await usersCollection.deleteOne(query);
       res.send(result);
     })
@@ -216,8 +216,8 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/advertise', async(req, res) =>{
-      const query = {advertisement: true};
+    app.get('/advertise', async (req, res) => {
+      const query = { advertisement: true };
       const result = await productsCollection.find(query).toArray();
       res.send(result);
     })
@@ -243,10 +243,10 @@ async function run() {
       res.send(result);
     })
 
-    app.put('/reported-product/:id', async(req, res) =>{
+    app.put('/reported-product/:id', async (req, res) => {
       const id = req.params.id;
-      const filter = {_id: ObjectId(id)};
-      const option = {upsert: true};
+      const filter = { _id: ObjectId(id) };
+      const option = { upsert: true };
       const updatedDoc = {
         $set: {
           report: true
@@ -256,8 +256,8 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/reported-product', verifyJWT, async(req, res) =>{
-      const query = {report: true};
+    app.get('/reported-product', verifyJWT, async (req, res) => {
+      const query = { report: true };
       const result = await productsCollection.find(query).toArray();
       res.send(result);
     })
@@ -284,11 +284,11 @@ async function run() {
     })
 
     // my orders product
-    app.post('/my-orders', async(req, res) => {
+    app.post('/my-orders', async (req, res) => {
       const product = req.body;
       const result = await bookedProductsCollection.insertOne(product);
       const id = req.body.productID;
-      const filter = {_id: ObjectId(id)};
+      const filter = { _id: ObjectId(id) };
       const updatedDoc = {
         $set: {
           availablity: false,
@@ -298,25 +298,35 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/my-orders', async(req, res) =>{
+    app.get('/my-orders', async (req, res) => {
       const email = req.query.email;
-      const query = {user_email: email};
+      const query = { user_email: email };
       const result = await bookedProductsCollection.find(query).toArray();
       res.send(result);
     })
 
-    app.get('/my-orders/:id', async(req, res) =>{
+    app.get('/my-orders/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: ObjectId(id)};
+      const query = { _id: ObjectId(id) };
       const result = await bookedProductsCollection.findOne(query);
       res.send(result);
     })
 
-    app.delete('/my-orders/:id', async(req, res) =>{
+    app.delete('/my-orders/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: ObjectId(id)};
+      const query = { _id: ObjectId(id) };
+      const getData = await bookedProductsCollection.findOne(query);
+
+      const productQuery = { _id: ObjectId(getData?.productID) };
+      const updatedDoc = {
+        $set: {
+          availablity: true
+        }
+      }
+      const productResult = await productsCollection.updateOne(productQuery, updatedDoc);
       const result = await bookedProductsCollection.deleteOne(query);
       res.send(result);
+
     })
 
     // check user admin
