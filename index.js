@@ -2,6 +2,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const { query } = require('express');
 require('dotenv').config();
 const stripe = require("stripe")(process.env.STRIPE_SECRET);
 
@@ -45,6 +46,7 @@ async function run() {
     const productsCollection = client.db('rebooksDb').collection('products');
     const bookedProductsCollection = client.db('rebooksDb').collection('bookedProduct');
     const paymentCollection = client.db('rebooksDb').collection('payment');
+    const wishListCollection = client.db('rebooksDb').collection('wishlist');
 
 
     const verifyAdmin = async (req, res, next) => {
@@ -283,6 +285,13 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/my-buyers', async(req, res) =>{
+      const email = req.query.email;
+      const query = {seller_email: email};
+      const result = await bookedProductsCollection.find(query).toArray();
+      res.send(result);
+    })
+
     // my orders product
     app.post('/my-orders', async (req, res) => {
       const product = req.body;
@@ -327,6 +336,29 @@ async function run() {
       const result = await bookedProductsCollection.deleteOne(query);
       res.send(result);
 
+    })
+
+    app.post('/add-to-wishlist', async(req, res) =>{
+      const wishListData = req.body;
+
+      const query = {user_email: req.body.user_email, productID: req.body.productID}
+      const result = await wishListCollection.findOne(query);
+      res.send(result);
+      const insertResult = await wishListCollection.insertOne(wishListData);
+      // res.send(insertResult);
+    })
+
+    app.get('/add-to-wishlist', async(req, res) =>{
+      const email = req.query.email;
+      const query = {user_email: email}
+      const result = await wishListCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.get('/sold-products', async (req, res) =>{
+      const query = {paid: true};
+      const result = await productsCollection.find(query).toArray();
+      res.send(result);
     })
 
     // check user admin
