@@ -298,11 +298,13 @@ async function run() {
       const result = await bookedProductsCollection.insertOne(product);
       const id = req.body.productID;
       const filter = { _id: ObjectId(id) };
+      const wishDataFilter = {productID: id};
       const updatedDoc = {
         $set: {
           availablity: false,
         }
       };
+      const updateWishListResult = await wishListCollection.updateOne(wishDataFilter, updatedDoc);
       const updateResult = await productsCollection.updateOne(filter, updatedDoc)
       res.send(result);
     })
@@ -325,14 +327,16 @@ async function run() {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const getData = await bookedProductsCollection.findOne(query);
-
+      
       const productQuery = { _id: ObjectId(getData?.productID) };
+      const wishProductQuery = {productID: getData?.productID};
       const updatedDoc = {
         $set: {
           availablity: true
         }
       }
       const productResult = await productsCollection.updateOne(productQuery, updatedDoc);
+      const wishProductResult = await wishListCollection.updateOne(wishProductQuery, updatedDoc);
       const result = await bookedProductsCollection.deleteOne(query);
       res.send(result);
 
@@ -395,8 +399,6 @@ async function run() {
       const user = await usersCollection.findOne(query);
       res.send({ isBuyer: user?.role === 'Buyer' })
     })
-
-
 
   }
   finally {
