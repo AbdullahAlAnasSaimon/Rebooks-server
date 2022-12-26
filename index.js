@@ -343,15 +343,26 @@ async function run() {
 
       const query = {user_email: req.body.user_email, productID: req.body.productID}
       const result = await wishListCollection.findOne(query);
-      res.send(result);
-      const insertResult = await wishListCollection.insertOne(wishListData);
-      // res.send(insertResult);
+      if((req.body.productID === result?.productID) && (req.body.user_email === result?.user_email)){
+        return res.send({message: 'Product Already In Wishlist'});
+      }
+      else{
+        const insertResult = await wishListCollection.insertOne(wishListData);
+        res.send(insertResult);
+      }
     })
 
     app.get('/add-to-wishlist', async(req, res) =>{
       const email = req.query.email;
       const query = {user_email: email}
       const result = await wishListCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    app.delete('/add-to-wishlist/:id', async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const result = await wishListCollection.deleteOne(query);
       res.send(result);
     })
 
